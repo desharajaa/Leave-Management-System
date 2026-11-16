@@ -7,20 +7,22 @@ const connectDB = require("./config/db");
 
 const app = express();
 
-// Allow frontend URLs
+// Allowed frontend URLs
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://leave-management-system-jb5xj9jrl-desharajaa.vercel.app"
+  "https://leave-management-system-jb5xj9jrl-desharajaa.vercel.app",
+  "https://leave-management-system-ashen-six.vercel.app",
+  "https://leave-management-system-fpznk14gd-desharajaa.vercel.app"
 ];
 
+// CORS configuration
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests without origin (Postman, server-to-server)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
-        callback(new Error("Not allowed by CORS: " + origin));
+        callback(new Error("CORS blocked origin: " + origin));
       }
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -38,8 +40,10 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// API routes
+// Authentication routes
 app.use("/api/auth", require("./routes/authRoutes"));
+
+// Leave routes
 app.use("/api/leaves", require("./routes/leaveRoutes"));
 
 // 404 handler
@@ -49,7 +53,7 @@ app.use((req, res) => {
   });
 });
 
-// Server start
+// Start server
 const PORT = process.env.PORT || 5000;
 
 connectDB()
