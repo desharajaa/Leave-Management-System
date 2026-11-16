@@ -28,7 +28,7 @@ function publicUser(user) {
   };
 }
 
-// REGISTER
+// REGISTER EMPLOYEE
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -92,23 +92,72 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      email: email.toLowerCase().trim()
-    });
+    const normalizedEmail = email.toLowerCase().trim();
 
-    if (
-      !user ||
-      user.role !== role ||
-      !(await bcrypt.compare(password, user.password))
-    ) {
-      return res.status(401).json({
-        message: "Invalid email, password or login type"
+    // MANAGER LOGIN
+    if (role === "manager") {
+      const managerEmail = process.env.MANAGER_EMAIL
+        ?.toLowerCase()
+        .trim();
+
+      const managerPassword = process.env.MANAGER_PASSWORD;
+
+      if (!managerEmail || !managerPassword) {
+        return res.status(500).json({
+          message: "Manager login is not configured"
+        });
+      }
+
+      if (
+        normalizedEmail !== managerEmail ||
+        password !== managerPassword
+      ) {
+        return res.status(401).json({
+          message: "Invalid manager email or password"
+        });
+      }
+
+      const manager = await User.findOne({
+        email: managerEmail,
+        role: "manager"
+      });
+
+      if (!manager) {
+        return res.status(401).json({
+          message: "Manager account not found. Contact administrator."
+        });
+      }
+
+      return res.json({
+        token: makeToken(manager),
+        user: publicUser(manager)
       });
     }
 
-    return res.json({
-      token: makeToken(user),
-      user: publicUser(user)
+    // EMPLOYEE LOGIN
+    if (role === "employee") {
+      const user = await User.findOne({
+        email: normalizedEmail
+      });
+
+      if (
+        !user ||
+        user.role !== "employee" ||
+        !(await bcrypt.compare(password, user.password))
+      ) {
+        return res.status(401).json({
+          message: "Invalid email or password"
+        });
+      }
+
+      return res.json({
+        token: makeToken(user),
+        user: publicUser(user)
+      });
+    }
+
+    return res.status(400).json({
+      message: "Invalid login type"
     });
 
   } catch (error) {
