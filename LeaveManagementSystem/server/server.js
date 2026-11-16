@@ -10,8 +10,8 @@ const app = express();
 // Allowed frontend URLs
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://leave-management-system-jb5xj9jrl-desharajaa.vercel.app",
   "https://leave-management-system-ashen-six.vercel.app",
+  "https://leave-management-system-jb5xj9jrl-desharajaa.vercel.app",
   "https://leave-management-system-fpznk14gd-desharajaa.vercel.app"
 ];
 
@@ -19,11 +19,22 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS blocked origin: " + origin));
+      // Allow requests without an origin
+      if (!origin) {
+        return callback(null, true);
       }
+
+      // Allow listed URLs and this project's Vercel preview URLs
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
+        /^https:\/\/leave-management-system-[a-z0-9-]+\.vercel\.app$/.test(origin);
+
+      if (isAllowed) {
+        return callback(null, true);
+      }
+
+      console.log("Blocked CORS origin:", origin);
+      return callback(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
